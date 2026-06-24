@@ -22,9 +22,8 @@ function Avatar({ icon, color, size = 24 }: { icon: AvatarIconKey; color: Avatar
 
 import {
   Dices, Settings, Play, LogIn,
-  ChevronDown, Pencil, Eye, Trophy,
-  Clock, Users, Zap, ArrowRight, Shield, Globe, Sparkles,
-  Shuffle, BookOpen,
+  ChevronDown, Shield, Globe, Sparkles,
+  Zap, Shuffle, BookOpen,
 } from 'lucide-react';
 
 /* ─── constants ────────────────────────────────────────── */
@@ -52,14 +51,6 @@ const WORD_PACKS = [
   { id: 'custom',   label: 'Custom' },
 ] as const;
 
-const FEATURES = [
-  { icon: Pencil,  label: 'Draw',    sub: 'Freehand canvas'    },
-  { icon: Eye,     label: 'Guess',   sub: 'Real-time chat'     },
-  { icon: Trophy,  label: 'Win',     sub: 'Live leaderboard'   },
-  { icon: Clock,   label: 'Fast',    sub: 'Under 10s to start' },
-  { icon: Users,   label: 'Social',   sub: 'Up to 20 players'  },
-  { icon: Zap,     label: 'Instant', sub: 'No account needed'  },
-];
 
 const SOCIAL = [
   {
@@ -246,8 +237,8 @@ export default function LobbyScreen() {
     if (!name.trim()) { setToast('Enter your name first ✍️'); setTimeout(() => setToast(''), 2500); return; }
     setLoading(true);
     setError('');
-    socket.connect();
-    socket.once('connect', () => {
+
+    const doCreate = () => {
       socket.emit('create_room', {
         hostName: name.trim(),
         settings: buildSettingsPayload(),
@@ -261,28 +252,63 @@ export default function LobbyScreen() {
           setLoading(false);
         }
       });
-    });
-    socket.once('connect_error', () => {
-      setError('Could not reach the server. Try again.');
-      setLoading(false);
-      socket.disconnect();
-    });
+    };
+
+    if (socket.connected) {
+      doCreate();
+    } else {
+      socket.connect();
+      socket.once('connect', doCreate);
+      socket.once('connect_error', () => {
+        setError('Could not reach the server. Try again.');
+        setLoading(false);
+        socket.disconnect();
+      });
+    }
   }, [name, buildSettingsPayload, avatarIcon, avatarColor, router, profileQuery]);
 
   const handleJoinRoom = useCallback(() => {
     if (!name.trim()) { setToast('Enter your name first ✍️'); setTimeout(() => setToast(''), 2500); return; }
     if (!roomId.trim()) { setToast('Enter a Sketch ID ✍️'); setTimeout(() => setToast(''), 2500); return; }
-    router.push(`/room/${roomId.trim().toUpperCase()}?${profileQuery(name.trim())}`);
+    router.push(`/room/${roomId.trim().toUpperCase().replace(/\s+/g, '')}?${profileQuery(name.trim())}`);
   }, [name, roomId, router, profileQuery]);
 
   const handleQuickPlay = useCallback(() => {
     if (!name.trim()) { setToast('Enter your name first ✍️'); setTimeout(() => setToast(''), 2500); return; }
-    const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    router.push(`/room/${randomCode}?${profileQuery(name.trim())}`);
-  }, [name, router, profileQuery]);
+    setLoading(true);
+
+    const doQuickPlay = () => {
+        socket.emit('create_room', {
+            hostName: name.trim(),
+            settings: buildSettingsPayload(),
+            avatarIcon,
+            avatarColor,
+        }, (res: any) => {
+            if (res.success) {
+                router.push(`/room/${res.roomId}?${profileQuery(name.trim())}`);
+            } else {
+                setToast('Failed to start quick play');
+                setLoading(false);
+            }
+        });
+    };
+
+    if (socket.connected) {
+        doQuickPlay();
+    } else {
+        socket.connect();
+        socket.once('connect', doQuickPlay);
+        socket.once('connect_error', () => {
+            setToast('Could not reach server. Try again.');
+            setLoading(false);
+            socket.disconnect();
+        });
+    }
+}, [name, buildSettingsPayload, avatarIcon, avatarColor, router, profileQuery]);
 
   const handleCopyLink = useCallback(() => {
-    navigator.clipboard.writeText(window.location.href).then(() => {
+    const shareText = `Join me on i-sketch! ${window.location.href}`;
+    navigator.clipboard.writeText(shareText).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -376,10 +402,11 @@ export default function LobbyScreen() {
                 type="text"
                 value={name}
                 onChange={e => { setName(e.target.value); setError(''); }}
+                onBlur={e => setName(e.target.value.trim())}
                 onKeyDown={e => e.key === 'Enter' && handleCreateRoom()}
                 placeholder="Enter your name"
                 maxLength={20}
-                className="flex-1 min-w-0 px-4 py-2.5 rounded-[8px] border border-zinc-800 bg-[#0a0a0a] text-[13px] text-zinc-200 placeholder-zinc-700 focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-700/50 transition-all"
+className="flex-1 min-w-0 px-4 py-2.5 rounded-[8px] border border-zinc-800 bg-[#0a0a0a] text-[13px] text-zinc-200 placeholder-zinc-700 focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-700/50 transition-all"
               />
               <button
                 onClick={pickRandomName}
@@ -531,15 +558,15 @@ export default function LobbyScreen() {
               <input
                 type="text"
                 value={roomId}
-                onChange={e => { setRoomId(e.target.value.toUpperCase()); setError(''); setToast(''); }}
+                onChange={e => { setRoomId(e.target.value.toUpperCase().trim()); setError(''); setToast(''); }}
                 onKeyDown={e => e.key === 'Enter' && handleJoinRoom()}
                 placeholder="A1B2C3"
                 maxLength={12}
-                className="flex-1 min-w-0 px-4 py-2.5 rounded-[8px] border border-zinc-800 bg-[#0a0a0a] font-mono text-[12px] tracking-[0.2em] text-zinc-200 placeholder-zinc-800 uppercase focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-700/50 transition-all"
+className="flex-1 min-w-0 px-4 py-2.5 rounded-[8px] border border-zinc-800 bg-[#0a0a0a] font-mono text-[12px] tracking-[0.2em] text-zinc-200 placeholder-zinc-800 uppercase focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-700/50 transition-all"
               />
               <button
                 onClick={handleJoinRoom}
-                disabled={false}
+                disabled={loading}
                 className="shrink-0 flex items-center gap-1.5 px-5 py-2.5 rounded-[8px] border border-zinc-800 bg-[#0a0a0a] text-zinc-400 hover:text-zinc-100 hover:border-zinc-600 hover:bg-zinc-900 disabled:opacity-20 disabled:cursor-not-allowed text-[12px] font-medium transition-all hover:-translate-y-[0.5px] active:translate-y-0"
               >
                 <LogIn className="w-3.5 h-3.5" />

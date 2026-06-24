@@ -106,20 +106,29 @@ export default function GameRoomScreen() {
   }, []);
 
   useEffect(() => {
-    if (!socket.connected) socket.connect();
-
     const triggerJoin = () => {
-        if (!roomId || !playerName) return;
-        socket.emit('join_room', { roomId, playerName, avatarIcon: myAvatarIcon, avatarColor: myAvatarColor }, (response: any) => {
-            if (response && !response.success) { setToast(response.message); setTimeout(() => setToast(''), 3000); }
-        });
-    };
+    if (!roomId || !playerName) return;
+    setDisconnected(false);
+    socket.emit('join_room', { 
+    roomId: roomId.trim(), 
+    playerName: playerName.trim(), 
+    avatarIcon: myAvatarIcon, 
+    avatarColor: myAvatarColor
+    }, (response: any) => {
+        if (response && !response.success) { setToast(response.message); setTimeout(() => setToast(''), 3000); }
+    });
+};
 
+if (socket.connected) {
     triggerJoin();
-    socket.on('connect', triggerJoin);
-    socket.on('update_players', (playersList) => setPlayers(playersList));
-    socket.on('disconnect', () => setDisconnected(true));
-    socket.on('connect', () => setDisconnected(false));
+} else {
+    socket.connect();
+}
+socket.on('connect', triggerJoin);
+
+
+   socket.on('update_players', (playersList) => setPlayers(playersList));
+socket.on('disconnect', () => setDisconnected(true));
 
     // Canvas events
     socket.on('draw_data', (stroke) => {
@@ -184,7 +193,7 @@ export default function GameRoomScreen() {
     // Optional: server may periodically reveal letters, e.g. { hint: "_ a _ _ o" }.
     // Falls back to underscores if the server never emits this event.
     socket.on('word_hint', (data: { hint: string }) => {
-        if (socket.id !== currentDrawerId) setWordHint(data.hint);
+    setWordHint(data.hint);
     });
 
     socket.on('timer_tick', (data) => {
@@ -214,9 +223,9 @@ export default function GameRoomScreen() {
     });
 
     socket.on('chat_message', (data) => {
-        setMessages(prev => [...prev, { name: data.playerName, text: data.text, type: data.type || 'chat' }]);
-        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
-    });
+    setMessages(prev => [...prev, { name: data.playerName, text: data.text, type: data.type || 'chat' }]);
+    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+});
 
     socket.on('reaction', (data) => {
         const id = reactionCounter.current++;
@@ -258,8 +267,9 @@ export default function GameRoomScreen() {
 
     return () => {
         window.removeEventListener('keydown', handleKeyDown);
-        socket.off('connect');
+        socket.off('connect', triggerJoin);
         socket.off('disconnect');
+        setDisconnected(false);
         socket.off('update_players');
         socket.off('draw_data');
         socket.off('canvas_clear');
@@ -396,6 +406,10 @@ export default function GameRoomScreen() {
 
           const canvas = canvasRef.current;
           if (canvas) {
+              // Keep max 20 history states to prevent memory bloat
+              if (canvasHistory.current.length >= 20) {
+                  canvasHistory.current.shift();
+              }
               canvasHistory.current.push(canvas.toDataURL());
           }
       }
@@ -455,7 +469,9 @@ export default function GameRoomScreen() {
       // Lightweight typing presence — harmless if the server doesn't relay it.
       socket.emit('typing', { roomId, name: playerName });
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      typingTimeoutRef.current = setTimeout(() => {}, 1200);
+      typingTimeoutRef.current = setTimeout(() => {
+    setTypingUsers(prev => prev.filter(n => n !== playerName));
+}, 1200);
   };
 
   const handleVoteSkip = () => {
@@ -499,7 +515,7 @@ export default function GameRoomScreen() {
       } catch {}
   };
 
-  const isMyTurn = socket.id === currentDrawerId;
+  const isMyTurn = !!socket.id && socket.id === currentDrawerId;
   const timerProgress = phase === 'ActiveDrawing' ? (timer / maxDrawTime) * 100 : 0;
 
   const getPlayerAvatar = (p: any) => ({
@@ -767,6 +783,12 @@ export default function GameRoomScreen() {
                   );
                 })}
               </div>
+                <button
+                onClick={() => window.location.href = '/'}
+                className="mb-6 flex items-center gap-2 px-5 py-2.5 rounded-[8px] border border-zinc-700/60 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-zinc-500 text-[12px] font-medium transition-all hover:-translate-y-[0.5px]"
+              >
+                ← Play again
+              </button>
 
               {rest.length > 0 && (
                 <div className="bg-[#0a0a0a] rounded-[12px] w-full max-w-sm border border-zinc-800/60 overflow-hidden">
