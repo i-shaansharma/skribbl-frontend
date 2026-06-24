@@ -251,21 +251,8 @@ npm run dev
 
 Frontend runs on:
 
-```text
-className="
-w-full
-h-14
-bg-white
-text-black
-font-semibold
-tracking-wide
-uppercase
-border
-border-zinc-700
-hover:bg-zinc-200
-transition-all
-duration-200
-"
+```
+http://localhost:3000
 ```
 
 ---

@@ -7,15 +7,15 @@ export const metadata: Metadata = {
   title: "i-sketch.io Clone | Ishaan Sharma",
   description: "A real-time multiplayer drawing and guessing game built with Next.js, Socket.IO, and Node.js. Developed by Ishaan Sharma.",
   openGraph: {
-    title: ".io Clone | Ishaan Sharma",
+    title: "i-sketch | Ishaan Sharma",
     description: "Play this real-time multiplayer drawing and guessing game. Built from scratch using Next.js and WebSockets.",
-    url: "https://skribbl-frontend-mocha.vercel.app",
-    siteName: "i-sketch.io Clone",
+    url: "https://i-sketch.vercel.app",
+    siteName: "i-sketch",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "i-sketch.io Clone | Ishaan Sharma",
+    title: "i-sketch | Ishaan Sharma",
     description: "Real-time multiplayer drawing and guessing game.",
   },
 };

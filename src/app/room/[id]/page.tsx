@@ -182,6 +182,8 @@ socket.on('disconnect', () => setDisconnected(true));
              setWordToDraw('_ '.repeat(data.wordLength));
              setWordHint('');
              setMessages(prev => [...prev, { name: 'System', text: 'New round · start guessing', type: 'system' }]);
+        } else {
+             setMessages(prev => [...prev, { name: 'System', text: 'Draw your word!', type: 'system' }]);
         }
     });
 
@@ -696,7 +698,7 @@ socket.on('disconnect', () => setDisconnected(true));
         <div className="text-right overflow-hidden">
           <span className="text-zinc-600 text-[9px] font-medium tracking-[0.12em] uppercase block mb-1">Time</span>
           <span className={`font-medium text-xl md:text-2xl font-mono block tabular-nums transition-colors ${timer <= 10 && timer > 0 ? 'text-red-500' : 'text-zinc-300'}`}>
-            {timer}s
+            {timer > 0 ? `${timer}s` : '—'}
           </span>
         </div>
       </div>
@@ -783,12 +785,6 @@ socket.on('disconnect', () => setDisconnected(true));
                   );
                 })}
               </div>
-                <button
-                onClick={() => window.location.href = '/'}
-                className="mb-6 flex items-center gap-2 px-5 py-2.5 rounded-[8px] border border-zinc-700/60 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-zinc-500 text-[12px] font-medium transition-all hover:-translate-y-[0.5px]"
-              >
-                ← Play again
-              </button>
 
               {rest.length > 0 && (
                 <div className="bg-[#0a0a0a] rounded-[12px] w-full max-w-sm border border-zinc-800/60 overflow-hidden">
@@ -810,11 +806,18 @@ socket.on('disconnect', () => setDisconnected(true));
                   </div>
                 </div>
               )}
+
+              <button
+                onClick={() => window.location.href = '/'}
+                className="mt-6 flex items-center gap-2 px-5 py-2.5 rounded-[8px] border border-zinc-700/60 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-zinc-500 text-[12px] font-medium transition-all hover:-translate-y-[0.5px]"
+              >
+                ← Play again
+              </button>
             </div>
           )}
 
           {/* Canvas */}
-          <div className="relative w-full max-w-[800px]">
+          <div className={`relative w-full max-w-[800px] ${phase === 'GameOver' || phase === 'WordSelection' ? 'hidden' : ''}`}>
             {/* Floating Reactions */}
             {floatingReactions.map(r => (
               <div
