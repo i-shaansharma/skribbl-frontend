@@ -1,262 +1,180 @@
-# i-sketch.io Clone - Real-Time Multiplayer Drawing Game
+# i-Sketch — Real-Time Multiplayer Drawing & Guessing Game
 
-**Live Demo Video:**
-https://youtu.be/dsrWwDutcLw?si=jVqoMPMQlV90A0oH
+A full-stack multiplayer drawing game inspired by Skribbl.io, built with Next.js, TypeScript, Socket.IO, Node.js, and HTML5 Canvas.
 
-A full-stack, real-time multiplayer drawing and guessing game inspired by i-sketch.io. The project implements a strict turn-based game loop, real-time canvas synchronization, time-based scoring, and a custom Object-Oriented game engine.
-
----
-
-# Live Deployment
-
-**Frontend:**
-https://i-sketch-frontend-mocha.vercel.app
-
-**Backend API:**
-https://i-sketch-backend-axey.onrender.com
+Players can create private rooms, invite friends, draw words in real time, and compete through multiple rounds while the server handles game state, scoring, timers, and turn rotation. The project was built from scratch with a custom game engine and real-time event architecture instead of relying on any game framework.
 
 ---
 
-## 📸 Application Screenshots
+## Live Demo
 
-<img width="1442" height="862" alt="looby" src="https://github.com/user-attachments/assets/b87af9f8-d55a-4b21-85d3-7010d61a154f" />
+**Frontend:** https://i-sketch.vercel.app/
 
-*Room Lobby and Configuration UI*
-
-<img width="1873" height="872" alt="wait_area" src="https://github.com/user-attachments/assets/e32da0f8-5e6c-4bcb-9622-e38cae0333e3" />
-
-*Real-time Canvas Sync and Chat Guessing*
-
-<img width="1872" height="872" alt="win" src="https://github.com/user-attachments/assets/adb9bf46-6398-42c1-ad90-88a0afceb740" />
+**Backend:** https://skribbl-backend-z442.onrender.com/
 
 ---
 
-# Architecture Overview
+## Features
 
-The application follows a decoupled full-stack architecture designed for low latency and scalable multiplayer gameplay.
+### Real-Time Multiplayer Gameplay
 
-## 1. Frontend (Next.js + HTML5 Canvas)
+* Create and join private rooms
+* Support for multiple players per lobby
+* Live chat-based word guessing
+* Automatic round progression
+* Real-time score updates
 
-Responsible for:
+### Drawing System
 
-* Room creation and management
-* Game phases (Lobby, Word Selection, Drawing, Reveal, Game Over)
-* Glassmorphism-based user interface
-
-### Canvas Engine
-
-* Uses native HTML5 `<canvas>`
-* Captures drawing events in real time
-* Sends stroke coordinates `(x0, y0, x1, y1)` and brush settings to the server instantly
-
-### Undo System
-
-* Stores Base64 image snapshots in `canvasHistory`
-* Restores previous canvas state using `drawImage()`
-
----
-
-## 2. Backend Engine (Node.js + Express)
-
-Acts as the authoritative game server.
-
-Responsibilities include:
-
-* Room management
-* Turn handling
-* Timer management
-* Score calculation
-* State synchronization
-
----
-
-## 3. Real-Time Communication (Socket.IO)
-
-Provides bi-directional communication between clients and server.
-
-Events include:
-
-* `draw_data`
-* `canvas_clear`
-* `undo_canvas`
-* Room updates
-* Score updates
-* Game state transitions
-
----
-
-# Core Features
-
-## Multiplayer Rooms
-
-Hosts can configure:
-
-* Players: 2–20
-* Rounds: 2–10
-* Draw Time: 15–240 seconds
-
-## Turn-Based Gameplay
-
-* Tracks completed drawers using `drawnPlayers`
-* Drawer receives 3 random words
-* 15-second word selection phase
-* Drawing timer starts automatically
-
-## Real-Time Drawing
-
-Features:
-
-* Smooth synchronized drawing
+* HTML5 Canvas based drawing
 * Multiple brush colors
 * Canvas clearing
 * Undo functionality
+* Instant drawing synchronization using Socket.IO
 
-## Dynamic Scoring System
+### Game Engine
 
-Points are awarded based on how quickly a player guesses the word:
+* Turn-based gameplay
+* Random word selection
+* Timed drawing rounds
+* Automatic drawer rotation
+* End-game winner detection
+* Dynamic scoring based on guess speed
 
-```javascript
-Math.floor((timeLeft / totalTime) * 500) + 100
-```
+### Room Configuration
 
-## Leaderboard & Winner Detection
+Hosts can customize:
 
-* Players ranked by `totalPoints`
-* Final leaderboard displayed after all rounds
-* Winner announced automatically
+* Number of rounds
+* Drawing duration
+* Maximum players
 
 ---
 
-# Object-Oriented Design
+## Technical Highlights
 
-The backend is structured using Object-Oriented Programming principles.
+### Real-Time Canvas Synchronization
 
-## SessionEngine
+Instead of sending images across the network, the application streams drawing coordinates and brush metadata. This keeps bandwidth usage low and allows drawings to appear almost instantly for every connected player.
 
-Singleton coordinator responsible for:
+### Server-Authoritative Architecture
 
-* Managing active game sessions
-* Room lifecycle management
+The backend acts as the source of truth for:
 
-## GameSession
-
-Handles:
-
-* Core game loop
+* Player management
 * Turn rotation
-* Word selection
-* Timers
-* Scoring
-* Event broadcasting
+* Timer control
+* Score calculation
+* Round progression
+* Game state synchronization
 
-## Participant
+This prevents clients from manipulating game state and keeps all players synchronized throughout a session.
 
-Represents an individual player and stores:
+### Custom Object-Oriented Game Engine
 
-* Connection ID
-* Display Name
-* Total Points
-* Drawing Status
+The backend is structured around three core classes:
 
----
+#### SessionEngine
 
-# Technology Stack
+Manages active rooms and game sessions.
 
-| Layer      | Technology                   | Purpose                    |
-| ---------- | ---------------------------- | -------------------------- |
-| Frontend   | Next.js, React, Tailwind CSS | UI, Routing, Styling       |
-| Canvas     | HTML5 Canvas API             | Drawing & State Management |
-| Backend    | Node.js, Express.js          | Server & Game Logic        |
-| WebSockets | Socket.IO                    | Real-Time Communication    |
-| Deployment | Vercel, Render               | Hosting & Deployment       |
+#### GameSession
+
+Handles the complete game lifecycle including rounds, timers, scoring, word selection, and turn management.
+
+#### Participant
+
+Represents a connected player and stores information such as score, name, and drawing status.
 
 ---
 
-# Frontend Project Structure
+## Tech Stack
+
+| Layer                   | Technology                 |
+| ----------------------- | -------------------------- |
+| Frontend                | Next.js, React, TypeScript |
+| Styling                 | Tailwind CSS               |
+| Real-Time Communication | Socket.IO                  |
+| Drawing Engine          | HTML5 Canvas               |
+| Backend                 | Node.js, Express.js        |
+| Deployment              | Vercel, Render             |
+
+---
+
+## Project Structure
+
+### Frontend
 
 ```text
 i-sketch-frontend/
-├── public/
 ├── src/
 │   ├── app/
-│   │   ├── room/[id]/
-│   │   │   └── page.tsx
-│   │   ├── favicon.ico
-│   │   ├── globals.css
-│   │   ├── layout.tsx
-│   │   └── page.tsx
-│   └── lib/
-│       └── socket.ts
-├── eslint.config.mjs
-├── next.config.ts
-├── package.json
-├── postcss.config.mjs
-└── tsconfig.json
+│   ├── components/
+│   ├── lib/
+│   └── styles/
+└── public/
 ```
 
----
-
-# Backend Project Structure
+### Backend
 
 ```text
 i-sketch-backend/
 ├── src/
-│   ├── config/
 │   ├── coordinators/
-│   │   └── SessionEngine.js
 │   ├── domain/
-│   │   ├── GameSession.js
-│   │   └── Participant.js
+│   ├── config/
 │   └── main.js
-├── .gitignore
-├── package-lock.json
-└── package.json
 ```
 
 ---
 
-# Local Setup
+## Running Locally
 
-## 1. Start Backend
+### Backend
 
 ```bash
 cd i-sketch-backend
-
 npm install
-
 node src/main.js
 ```
 
-Backend runs on:
+Runs on:
 
 ```text
 http://localhost:4000
 ```
 
----
-
-## 2. Start Frontend
+### Frontend
 
 ```bash
 cd i-sketch-frontend
-
 npm install
-
-# Update src/lib/socket.ts
-# Change API URL to:
-# http://localhost:4000
-
 npm run dev
 ```
 
-Frontend runs on:
+Runs on:
 
-```
+```text
 http://localhost:3000
 ```
 
 ---
 
-# Author
+## What I Learned
 
-Made by Ishaan Sharma
+Building this project gave me hands-on experience with:
+
+* WebSocket-based real-time communication
+* Multiplayer game state management
+* Event-driven system design
+* HTML5 Canvas APIs
+* Scalable room/session architecture
+* Deploying full-stack applications across multiple services
+
+---
+
+## Author
+
+Ishaan Sharma
+
+Computer Science Undergraduate | Full-Stack Development | Real-Time Systems | AI & Machine Learning
