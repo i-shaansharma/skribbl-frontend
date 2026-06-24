@@ -83,6 +83,8 @@ export default function GameRoomScreen() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [color, setColor] = useState('#09090b');
   const [brushSize, setBrushSize] = useState(5);
+  const [penType, setPenType] = useState<'pencil'|'marker'|'highlighter'|'eraser'>('marker');
+  const [showPenDropdown, setShowPenDropdown] = useState(false);
   const lastPos = useRef<{x: number, y: number} | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [toast, setToast] = useState('');
@@ -132,7 +134,7 @@ socket.on('disconnect', () => setDisconnected(true));
 
     // Canvas events
     socket.on('draw_data', (stroke) => {
-        drawLineOnCanvas(stroke.x0, stroke.y0, stroke.x1, stroke.y1, stroke.color, stroke.size);
+        drawLineOnCanvas(stroke.x0, stroke.y0, stroke.x1, stroke.y1, stroke.color, stroke.size, stroke.pen);
     });
 
     socket.on('canvas_clear', () => clearLocalCanvas());
@@ -339,20 +341,38 @@ socket.on('disconnect', () => setDisconnected(true));
       }
   };
 
-  const drawLineOnCanvas = (x0: number, y0: number, x1: number, y1: number, color: string, size: number) => {
+  const drawLineOnCanvas = (x0: number, y0: number, x1: number, y1: number, color: string, size: number, pen: string = 'marker') => {
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext('2d');
       if (!ctx) return;
 
+      ctx.save();
       ctx.beginPath();
       ctx.moveTo(x0, y0);
       ctx.lineTo(x1, y1);
-      ctx.strokeStyle = color;
       ctx.lineWidth = size;
-      ctx.lineCap = 'round';
+      ctx.lineCap = pen === 'pencil' ? 'square' : 'round';
       ctx.lineJoin = 'round';
+
+      if (pen === 'highlighter') {
+          ctx.globalAlpha = 0.35;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = size * 2.5;
+      } else if (pen === 'pencil') {
+          ctx.globalAlpha = 0.7;
+          ctx.strokeStyle = color;
+      } else if (pen === 'eraser') {
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = 'rgba(0,0,0,1)';
+      } else {
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = color;
+      }
+
       ctx.stroke();
       ctx.closePath();
+      ctx.restore();
   };
 
       const getCoordinates = (e: any) => {
@@ -391,11 +411,11 @@ socket.on('disconnect', () => setDisconnected(true));
       const coords = getCoordinates(e);
       if (!coords) return;
 
-      drawLineOnCanvas(lastPos.current.x, lastPos.current.y, coords.x, coords.y, color, brushSize);
+      drawLineOnCanvas(lastPos.current.x, lastPos.current.y, coords.x, coords.y, color, brushSize, penType);
 
       socket.emit('draw_data', {
           roomId,
-          stroke: { x0: lastPos.current.x, y0: lastPos.current.y, x1: coords.x, y1: coords.y, color, size: brushSize }
+          stroke: { x0: lastPos.current.x, y0: lastPos.current.y, x1: coords.x, y1: coords.y, color, size: brushSize, pen: penType }
       });
 
       lastPos.current = coords;
@@ -848,12 +868,12 @@ socket.on('disconnect', () => setDisconnected(true));
               </div>
             ))}
 
-            <div className={`w-full aspect-[4/3] bg-white rounded-[12px] overflow-hidden border transition-all duration-300 ${isMyTurn && phase === 'ActiveDrawing' ? 'border-zinc-500 cursor-crosshair shadow-2xl shadow-black/60 ring-1 ring-zinc-500/20' : 'border-zinc-800/80 cursor-not-allowed shadow-xl shadow-black/40'} relative`}>
+            <div className={`w-full aspect-[4/3] bg-zinc-950 rounded-[12px] overflow-hidden border transition-all duration-300 ${isMyTurn && phase === 'ActiveDrawing' ? 'border-zinc-600 cursor-crosshair shadow-2xl shadow-black/60 ring-1 ring-zinc-500/20' : 'border-zinc-800/80 cursor-not-allowed shadow-xl shadow-black/40'} relative`}>
               <canvas
                 ref={canvasRef}
                 width={800}
                 height={600}
-                className={`w-full h-full bg-white touch-none ${isMyTurn && phase === 'ActiveDrawing' ? 'drawing-active' : ''}`}
+                className={`w-full h-full bg-zinc-950 touch-none ${isMyTurn && phase === 'ActiveDrawing' ? 'drawing-active' : ''}`}
                 onMouseDown={startDrawing}
                 onMouseMove={draw}
                 onMouseUp={stopDrawing}
@@ -894,55 +914,90 @@ socket.on('disconnect', () => setDisconnected(true));
           )}
 
           {/* Canvas Controls */}
-          <div className={`mt-2.5 w-full max-w-[800px] flex flex-wrap items-center gap-2.5 md:gap-3 bg-[#111113] px-4 py-2.5 rounded-[10px] border border-zinc-800/60 transition-all duration-200 ${isMyTurn && phase === 'ActiveDrawing' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+          <div className={`mt-2.5 w-full max-w-[800px] flex flex-wrap items-center gap-2.5 md:gap-3 bg-[#0f0f11] px-4 py-3 rounded-[10px] border border-zinc-800/60 transition-all duration-200 ${isMyTurn && phase === 'ActiveDrawing' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+
+            {/* Pen Type Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowPenDropdown(s => !s)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] border border-zinc-700/60 bg-zinc-900/80 text-zinc-300 hover:border-zinc-500 text-[11px] font-medium transition-all min-w-[90px] justify-between"
+              >
+                <span>
+                  {penType === 'pencil' ? '✏️ Pencil' : penType === 'marker' ? '🖊️ Marker' : penType === 'highlighter' ? '🖍️ Highlighter' : '🧹 Eraser'}
+                </span>
+                <span className="text-zinc-600 text-[9px]">▾</span>
+              </button>
+              {showPenDropdown && (
+                <div className="absolute bottom-full mb-1.5 left-0 z-20 bg-[#111113] border border-zinc-700/60 rounded-[8px] overflow-hidden shadow-xl shadow-black/40 min-w-[130px]">
+                  {([
+                    { id: 'marker', label: '🖊️ Marker' },
+                    { id: 'pencil', label: '✏️ Pencil' },
+                    { id: 'highlighter', label: '🖍️ Highlighter' },
+                    { id: 'eraser', label: '🧹 Eraser' },
+                  ] as const).map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => { setPenType(p.id); setShowPenDropdown(false); }}
+                      className={`w-full text-left px-3 py-2 text-[11px] font-medium transition-colors hover:bg-zinc-800/60 ${penType === p.id ? 'text-zinc-100 bg-zinc-800/40' : 'text-zinc-400'}`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="w-px h-6 bg-zinc-800/60 mx-0.5" />
 
             {/* Colors */}
-            <div className="flex gap-1.5 md:gap-2.5 flex-wrap justify-center">
+            <div className="flex gap-1.5 md:gap-2 flex-wrap">
               {[
                 { color: '#09090b', label: 'Black' },
+                { color: '#ffffff', label: 'White' },
                 { color: '#ef4444', label: 'Red' },
-                { color: '#3b82f6', label: 'Blue' },
-                { color: '#22c55e', label: 'Green' },
-                { color: '#eab308', label: 'Yellow' },
                 { color: '#f97316', label: 'Orange' },
+                { color: '#eab308', label: 'Yellow' },
+                { color: '#22c55e', label: 'Green' },
+                { color: '#3b82f6', label: 'Blue' },
                 { color: '#8b5cf6', label: 'Purple' },
-                { color: '#ffffff', label: 'Eraser' },
+                { color: '#ec4899', label: 'Pink' },
+                { color: '#6b7280', label: 'Gray' },
               ].map(({ color: c, label }) => (
                 <button
                   key={c}
-                  onClick={() => setColor(c)}
+                  onClick={() => { setColor(c); if (penType === 'eraser') setPenType('marker'); }}
                   title={label}
                   style={{ backgroundColor: c }}
-                  className={`w-6 h-6 rounded-full transition-all hover:scale-110 ${c === '#ffffff' ? 'border border-zinc-500' : 'border border-zinc-700/50'} ${color === c ? 'ring-2 ring-offset-2 ring-offset-[#111113] ring-zinc-400 scale-110' : ''}`}
+                  className={`w-5 h-5 rounded-full transition-all hover:scale-110 ${c === '#ffffff' || c === '#09090b' ? 'border border-zinc-600' : 'border border-zinc-800/40'} ${color === c && penType !== 'eraser' ? 'ring-2 ring-offset-1 ring-offset-[#0f0f11] ring-zinc-400 scale-110' : ''}`}
                 />
               ))}
             </div>
 
-            <div className="w-px h-6 bg-zinc-800/60 mx-0.5 hidden md:block" />
+            <div className="w-px h-6 bg-zinc-800/60 mx-0.5" />
 
             {/* Brush Size */}
             <div className="flex items-center gap-2">
-              <span className="text-[9px] text-zinc-600 uppercase tracking-[0.1em] hidden md:block font-medium">Size</span>
+              <span className="text-[9px] text-zinc-600 uppercase tracking-[0.1em] font-medium hidden sm:block">Size</span>
               <input
                 type="range"
                 min={2}
-                max={24}
+                max={200}
                 step={1}
                 value={brushSize}
                 onChange={e => setBrushSize(Number(e.target.value))}
-                className="w-16 md:w-20 accent-zinc-500 cursor-pointer"
+                className="w-16 md:w-24 cursor-pointer"
               />
-              <span className="text-[10px] text-zinc-500 font-mono w-4 tabular-nums">{brushSize}</span>
+              <span className="text-[10px] text-zinc-500 font-mono w-6 tabular-nums">{brushSize}</span>
             </div>
 
-            <div className="w-px h-6 bg-zinc-800/60 mx-0.5 hidden md:block" />
+            <div className="w-px h-6 bg-zinc-800/60 mx-0.5" />
 
             {/* Tools */}
-            <div className="flex gap-1.5 md:gap-2 mt-1 md:mt-0 w-full md:w-auto justify-center">
-              <button onClick={handleUndoClick} className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-200 border border-zinc-800/60 hover:border-zinc-600 px-3 py-1.5 rounded-[6px] text-[10px] font-medium tracking-[0.05em] transition-all hover:bg-zinc-900/80">
+            <div className="flex gap-1.5 md:gap-2">
+              <button onClick={handleUndoClick} className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-200 border border-zinc-800/60 hover:border-zinc-600 px-3 py-1.5 rounded-[6px] text-[10px] font-medium transition-all hover:bg-zinc-900/80">
                 <span className="text-[11px]">↩</span><span className="uppercase hidden sm:inline">Undo</span>
               </button>
-              <button onClick={handleClearCanvasClick} className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-200 border border-zinc-800/60 hover:border-zinc-600 px-3 py-1.5 rounded-[6px] text-[10px] font-medium tracking-[0.05em] transition-all hover:bg-zinc-900/80">
+              <button onClick={handleClearCanvasClick} className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-200 border border-zinc-800/60 hover:border-zinc-600 px-3 py-1.5 rounded-[6px] text-[10px] font-medium transition-all hover:bg-zinc-900/80">
                 <span className="text-[11px]">⌫</span><span className="uppercase hidden sm:inline">Clear</span>
               </button>
             </div>
