@@ -868,12 +868,31 @@ socket.on('disconnect', () => setDisconnected(true));
               </div>
             ))}
 
-            <div className={`w-full aspect-[4/3] bg-zinc-950 rounded-[12px] overflow-hidden border transition-all duration-300 ${isMyTurn && phase === 'ActiveDrawing' ? 'border-zinc-600 cursor-crosshair shadow-2xl shadow-black/60 ring-1 ring-zinc-500/20' : 'border-zinc-800/80 cursor-not-allowed shadow-xl shadow-black/40'} relative`}>
-              <canvas
-                ref={canvasRef}
-                width={800}
-                height={600}
-                className={`w-full h-full bg-zinc-950 touch-none ${isMyTurn && phase === 'ActiveDrawing' ? 'drawing-active' : ''}`}
+           <div
+  className={`w-full aspect-[4/3] rounded-[14px] overflow-hidden border relative transition-all duration-300
+  ${
+    isMyTurn && phase === 'ActiveDrawing'
+      ? 'border-zinc-700/80 cursor-crosshair shadow-[0_20px_60px_rgba(0,0,0,0.55)] ring-1 ring-zinc-600/20'
+      : 'border-zinc-800/60 cursor-not-allowed shadow-[0_12px_40px_rgba(0,0,0,0.4)]'
+  }`}
+  style={{
+    background:
+      'linear-gradient(180deg, #fcfcfd 0%, #f4f4f5 100%)',
+  }}
+>
+  <canvas
+    ref={canvasRef}
+    width={800}
+    height={600}
+    className={`w-full h-full touch-none ${
+      isMyTurn && phase === 'ActiveDrawing'
+        ? 'drawing-active'
+        : ''
+    }`}
+    style={{
+      background:
+        'linear-gradient(180deg, #fcfcfd 0%, #f4f4f5 100%)',
+    }}
                 onMouseDown={startDrawing}
                 onMouseMove={draw}
                 onMouseUp={stopDrawing}
