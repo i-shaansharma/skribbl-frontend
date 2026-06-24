@@ -703,6 +703,25 @@ socket.on('disconnect', () => setDisconnected(true));
         </div>
       </div>
 
+      {/* Mobile Start Game Button */}
+      {phase === 'Lobby' && players.length >= 2 && (
+        <div className="lg:hidden relative z-10 mb-3">
+          <button
+            onClick={handleStartGame}
+            className="w-full bg-zinc-100 text-zinc-900 hover:bg-white py-3 rounded-[10px] font-medium text-[13px] transition-colors"
+          >
+            Start game
+          </button>
+        </div>
+      )}
+
+      {/* Mobile waiting message */}
+      {phase === 'Lobby' && players.length < 2 && (
+        <div className="lg:hidden relative z-10 mb-3 py-2.5 text-center">
+          <p className="text-[11px] text-zinc-600">Need at least 2 players to start</p>
+        </div>
+      )}
+
       {/* Timer Progress Bar */}
       {phase === 'ActiveDrawing' && (
         <div className="relative z-10 w-full h-0.5 bg-zinc-900 rounded-full mb-3 md:mb-4 overflow-hidden">
