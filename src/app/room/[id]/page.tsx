@@ -1,8 +1,3 @@
-// ==========================================
-// src/app/room/[id]/page.tsx
-// PURPOSE: THE GAME ROOM (Premium Minimal UI) - ENHANCED
-// ==========================================
-
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
@@ -709,7 +704,7 @@ socket.on('disconnect', () => setDisconnected(true));
               ? displayWord.trim().split(' ').map((seg, i) => (
                   <span key={i} className="inline-block mx-0.5">{seg}</span>
                 ))
-              : displayWord || '· · · · · ·'
+              : displayWord || 'Waiting For Others'
             }
           </span>
         </div>
