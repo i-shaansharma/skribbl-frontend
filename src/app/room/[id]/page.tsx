@@ -869,17 +869,18 @@ socket.on('disconnect', () => setDisconnected(true));
             ))}
 
            <div
-  className={`w-full aspect-[4/3] rounded-[14px] overflow-hidden border relative transition-all duration-300
+  className={`w-full aspect-[4/3] rounded-[16px] overflow-hidden border relative transition-all duration-300
   ${
     isMyTurn && phase === 'ActiveDrawing'
-      ? 'border-zinc-700/80 cursor-crosshair shadow-[0_20px_60px_rgba(0,0,0,0.55)] ring-1 ring-zinc-600/20'
-      : 'border-zinc-800/60 cursor-not-allowed shadow-[0_12px_40px_rgba(0,0,0,0.4)]'
+      ? 'border-zinc-700/80 cursor-crosshair shadow-[0_25px_80px_rgba(0,0,0,0.65)] ring-1 ring-zinc-600/20'
+      : 'border-zinc-800/60 cursor-not-allowed shadow-[0_20px_60px_rgba(0,0,0,0.45)]'
   }`}
   style={{
-    background:
-      'linear-gradient(180deg, #fcfcfd 0%, #f4f4f5 100%)',
+    background: '#151518',
   }}
 >
+  <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
+
   <canvas
     ref={canvasRef}
     width={800}
@@ -890,8 +891,7 @@ socket.on('disconnect', () => setDisconnected(true));
         : ''
     }`}
     style={{
-      background:
-        'linear-gradient(180deg, #fcfcfd 0%, #f4f4f5 100%)',
+      background: '#151518',
     }}
                 onMouseDown={startDrawing}
                 onMouseMove={draw}
